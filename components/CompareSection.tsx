@@ -21,6 +21,19 @@ const smooth = (v: number) => {
 
 // Bölümün scroll ilerlemesi (0 = bölüm ekranı doldurdu, 1 = sabit kısım bitti). Canvas ve HTML aynı değeri okur.
 const progress = { p: 0 };
+// Canvas talep üzerine çizilir (frameloop="demand"): scroll değişince ya da telefonlar hedefe varmadıysa yeni kare istenir
+let requestFrame: () => void = () => {};
+
+function FrameBridge() {
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => {
+    requestFrame = () => invalidate();
+    return () => {
+      requestFrame = () => {};
+    };
+  }, [invalidate]);
+  return null;
+}
 
 // Modeli normalize eder: en uzun ekseni dikey (Y), ekranı kameraya (+Z) dönük, merkezi orijinde, yüksekliği 1 birim.
 // Ana sahnedeki telefonla aynı nesneyi paylaşmamak için kopya alınır (materyaller paylaşılır, renkler aynı kalır).
@@ -70,7 +83,7 @@ function Phone({ url, side, heightMm }: { url: string; side: -1 | 1; heightMm: n
   const ref = useRef<THREE.Group>(null);
   const { viewport, size } = useThree();
 
-  useFrame((state, dt) => {
+  useFrame((_, rawDt) => {
     const g = ref.current;
     if (!g) return;
     const p = progress.p;
@@ -86,14 +99,17 @@ function Phone({ url, side, heightMm }: { url: string; side: -1 | 1; heightMm: n
     const spin = smooth((p - 0.12) / 0.45);
     const x = tx + side * viewport.width * 0.4 * (1 - enter);
     const rotY = Math.PI * (1 - spin) - side * 0.3 * spin;
-    const float = Math.sin(state.clock.elapsedTime * 1.1 + side) * 0.03 * viewport.height * 0.1;
+    const dt = Math.min(rawDt, 0.05); // talep üzerine çizimde kareler arası uzun boşluk zıplama yapmasın
 
     g.position.x = THREE.MathUtils.damp(g.position.x, x, 6, dt);
-    g.position.y = THREE.MathUtils.damp(g.position.y, ty + float, 6, dt);
+    g.position.y = THREE.MathUtils.damp(g.position.y, ty, 6, dt);
     g.rotation.y = THREE.MathUtils.damp(g.rotation.y, rotY, 6, dt);
     g.rotation.z = THREE.MathUtils.damp(g.rotation.z, side * 0.04 * (1 - spin), 6, dt);
     const s = THREE.MathUtils.damp(g.scale.x, h, 6, dt);
     g.scale.setScalar(s);
+
+    // Hedefe varılmadıysa bir kare daha iste; vardıysa sahne durur (GPU boşta kalır)
+    if (Math.abs(g.position.x - x) + Math.abs(g.rotation.y - rotY) + Math.abs(s - h) > 0.001) requestFrame();
   });
 
   return (
@@ -108,13 +124,17 @@ export default function CompareSection() {
   const rowsRef = useRef<(HTMLDivElement | null)[]>([]);
   const headRef = useRef<HTMLDivElement>(null);
   const labelsRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false); // ilk yaklaşmada bir kez kurulur, sonra kalır (yeniden kurulum takılma yapar)
   const [near, setNear] = useState(false);
 
   // Canvas sadece bölüm ekrana yaklaşınca çalışır (ana sahneyle aynı anda GPU harcamasın)
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
-    const io = new IntersectionObserver(([e]) => setNear(e.isIntersecting), { rootMargin: '50% 0px' });
+    const io = new IntersectionObserver(([e]) => {
+      setNear(e.isIntersecting);
+      if (e.isIntersecting) setMounted(true);
+    }, { rootMargin: '50% 0px' });
     io.observe(el);
     return () => io.disconnect();
   }, []);
@@ -127,7 +147,10 @@ export default function CompareSection() {
       const vh = window.innerHeight;
       const top = sec.getBoundingClientRect().top;
       const p = clamp01(-top / Math.max(1, sec.offsetHeight - vh));
-      progress.p = p;
+      if (p !== progress.p) {
+        progress.p = p;
+        requestFrame();
+      }
 
       const head = smooth((p + 0.05) / 0.2);
       if (headRef.current) {
@@ -160,11 +183,12 @@ export default function CompareSection() {
       <div className="sticky top-0 h-svh w-full overflow-hidden">
         <div className="absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-cyan-500/10 to-transparent pointer-events-none" />
 
-        {near && (
+        {mounted && (
           <Canvas
+            frameloop={near ? 'demand' : 'never'}
             className="!absolute inset-0"
             camera={{ position: [0, 0, 6], fov: 35 }}
-            dpr={[1, 1.5]}
+            dpr={[1, 1.25]}
             gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
             style={{ pointerEvents: 'none' }}
           >
@@ -172,6 +196,7 @@ export default function CompareSection() {
             <directionalLight position={[5, 5, 5]} intensity={4.5} />
             <directionalLight position={[-5, -5, -5]} intensity={2.5} color="#06b6d4" />
             <spotLight position={[0, -5, 10]} intensity={6} angle={0.5} penumbra={1} />
+            <FrameBridge />
             <Suspense fallback={null}>
               <Phone url={S26_URL} side={-1} heightMm={S26_HEIGHT_MM} />
               <Phone url={S25_URL} side={1} heightMm={S25_HEIGHT_MM} />
