@@ -10,6 +10,7 @@ const LINKS = [
   { label: 'Camera', id: 'camera', offset: 0 },
   { label: 'S Pen', id: 's-pen', offset: 1 },
   { label: 'Colors', id: 'colors', offset: 1 },
+  { label: 'Compare', id: 'compare', offset: 2 },
   { label: 'Specs', id: 'specs', offset: 0 },
 ];
 
@@ -22,6 +23,7 @@ const SECTIONS: { id: string; link: string | null }[] = [
   { id: 's-pen', link: 's-pen' },
   { id: 'colors', link: 'colors' },
   { id: 'galaxy-ai', link: null },
+  { id: 'compare', link: 'compare' },
   { id: 'specs', link: 'specs' },
 ];
 
