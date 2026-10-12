@@ -3,13 +3,11 @@
 import { scrollToId } from '@/lib/lenis';
 import { SECTIONS, useActiveSection } from '@/lib/sections';
 
-// Sağ kenarda bölüm noktaları: hangi bölümde olduğunu gösterir, tıklayınca o bölüme gider.
-// Üstüne gelince bölüm adı solda belirir. Masaüstü ve tablette görünür (mobilde ekranı kalabalıklaştırmasın).
 export default function SectionDots() {
   const active = useActiveSection();
 
   return (
-    <nav aria-label="Sections" className="hidden md:flex fixed right-4 lg:right-6 top-1/2 -translate-y-1/2 z-40 flex-col items-end gap-2.5">
+    <nav aria-label="Sections" className="hidden lg:flex fixed right-6 top-1/2 -translate-y-1/2 z-40 flex-col items-end gap-2.5">
       {SECTIONS.map((s) => {
         const isActive = s.id === active;
         return (

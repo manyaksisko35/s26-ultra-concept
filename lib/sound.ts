@@ -1,14 +1,11 @@
-// Ses tasarımı: tüm sesler Web Audio ile anında sentezlenir (dosya indirilmez). Varsayılan KAPALI;
-// kullanıcı açarsa tercihi hatırlanır. Ses motoru ilk kullanıcı etkileşiminde başlatılır (tarayıcı kuralı).
 export type SoundName = 'tick' | 'shutter' | 'pen' | 'chime';
 
-const KEY = 's27-sound';
+const KEY = 's26-sound';
 let ctx: AudioContext | null = null;
 let enabled = false;
 const listeners = new Set<() => void>();
 const lastPlayed: Partial<Record<SoundName, number>> = {};
 
-// Kaydedilmiş tercih (localStorage engelliyse sessizce varsayılana döner)
 if (typeof window !== 'undefined') {
   try {
     enabled = window.localStorage.getItem(KEY) === 'on';
@@ -28,7 +25,6 @@ function ensureCtx() {
   return ctx;
 }
 
-// Tercih "açık" kayıtlıysa, ses motoru ilk dokunuş/tıklamada hazırlanır
 if (typeof window !== 'undefined') {
   const prime = () => enabled && ensureCtx();
   window.addEventListener('pointerdown', prime, { once: true, passive: true });
@@ -48,13 +44,11 @@ export function setSoundOn(on: boolean) {
   try {
     window.localStorage.setItem(KEY, on ? 'on' : 'off');
   } catch {
-    // depolama yoksa sadece bu oturum için geçerli
   }
   if (on) ensureCtx();
   listeners.forEach((l) => l());
 }
 
-// Kısa ton (zarf: hızlı atak, üstel sönüm)
 function tone(c: AudioContext, t: number, freq: number, dur: number, gain: number, type: OscillatorType = 'sine') {
   const o = c.createOscillator();
   const g = c.createGain();
@@ -68,7 +62,6 @@ function tone(c: AudioContext, t: number, freq: number, dur: number, gain: numbe
   o.stop(t + dur + 0.02);
 }
 
-// Filtrelenmiş gürültü patlaması (deklanşör / mekanik tık)
 function noise(c: AudioContext, t: number, dur: number, gain: number, freq: number) {
   const len = Math.max(1, Math.floor(c.sampleRate * dur));
   const buf = c.createBuffer(1, len, c.sampleRate);
@@ -90,7 +83,6 @@ export function playSound(name: SoundName) {
   if (!enabled) return;
   const c = ensureCtx();
   if (!c) return;
-  // Aynı ses art arda çok hızlı çalmasın (ör. hızlı scroll'da zoom durakları)
   const now = performance.now();
   if (now - (lastPlayed[name] ?? 0) < 90) return;
   lastPlayed[name] = now;
@@ -100,16 +92,16 @@ export function playSound(name: SoundName) {
     case 'tick':
       tone(c, t, 1750, 0.05, 0.05);
       break;
-    case 'shutter': // iki parçalı mekanik deklanşör
+    case 'shutter':
       noise(c, t, 0.05, 0.5, 2600);
       noise(c, t + 0.07, 0.07, 0.35, 1800);
       break;
-    case 'pen': // S Pen yuvadan çıkış "klik"i
+    case 'pen':
       tone(c, t, 3200, 0.025, 0.06, 'triangle');
       noise(c, t, 0.02, 0.25, 5000);
       tone(c, t + 0.07, 2400, 0.03, 0.05, 'triangle');
       break;
-    case 'chime': // şarj tamam: yükselen arpej
+    case 'chime':
       [1046.5, 1318.5, 1568, 2093].forEach((f, i) => tone(c, t + i * 0.09, f, 0.45, 0.045));
       break;
   }

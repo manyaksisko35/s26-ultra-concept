@@ -3,8 +3,6 @@
 import { useProgress } from '@react-three/drei';
 import { useEffect, useState } from 'react';
 
-// Yükleme ekranı: telefonun arka silüeti (gövde, kameralar) yükleme yüzdesine göre çizgiyle çizilir.
-// Bitince içi dolar, ardından ekran yavaşça kaybolur.
 const LENSES = [
   { cx: 30, cy: 34 },
   { cx: 30, cy: 62 },
@@ -13,13 +11,16 @@ const LENSES = [
 
 export default function Loader() {
   const { progress, active } = useProgress();
-  const [complete, setComplete] = useState(false); // çizim bitti, içi doluyor
-  const [done, setDone] = useState(false); // ekran kayboluyor
+  const [complete, setComplete] = useState(false);
+  const [done, setDone] = useState(false);
 
   useEffect(() => {
     if (!active && progress === 100) {
       const t1 = setTimeout(() => setComplete(true), 150);
-      const t2 = setTimeout(() => setDone(true), 1100);
+      const t2 = setTimeout(() => {
+        setDone(true);
+        document.documentElement.dataset.loaded = '1';
+      }, 1100);
       return () => {
         clearTimeout(t1);
         clearTimeout(t2);
@@ -28,7 +29,6 @@ export default function Loader() {
   }, [active, progress]);
 
   const p = progress / 100;
-  // Her parça kendi sırasında çizilir: önce gövde, sonra kameralar, en son flaş
   const part = (start: number, end: number) => Math.min(1, Math.max(0, (p - start) / (end - start)));
   const stroke = (t: number) => ({ strokeDasharray: 1, strokeDashoffset: 1 - t, transition: 'stroke-dashoffset 0.35s ease-out' });
 
@@ -52,7 +52,6 @@ export default function Loader() {
           </linearGradient>
         </defs>
 
-        {/* Soluk taslak: yükleme başında da silüet görünsün, renkli çizgi bunun üstünden ilerler */}
         <g fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1">
           <rect x="4" y="4" width="92" height="192" rx="12" />
           {LENSES.map((l, i) => (
@@ -62,7 +61,6 @@ export default function Loader() {
           <circle cx="50" cy="52" r="2.2" />
         </g>
 
-        {/* Gövde */}
         <rect
           x="4" y="4" width="92" height="192" rx="12"
           pathLength={1}
@@ -70,7 +68,6 @@ export default function Loader() {
           stroke="url(#ld-stroke)" strokeWidth="1.2"
           style={{ ...stroke(part(0, 0.6)), transition: 'stroke-dashoffset 0.35s ease-out, fill 0.6s ease' }}
         />
-        {/* Kameralar */}
         {LENSES.map((l, i) => (
           <g key={i}>
             <circle cx={l.cx} cy={l.cy} r="10.5" pathLength={1} fill="none" stroke="url(#ld-stroke)" strokeWidth="1.1" style={stroke(part(0.55 + i * 0.1, 0.7 + i * 0.1))} />
@@ -81,10 +78,8 @@ export default function Loader() {
             />
           </g>
         ))}
-        {/* Flaş ve lazer AF */}
         <circle cx="50" cy="34" r="3" pathLength={1} fill="none" stroke="url(#ld-stroke)" strokeWidth="1" style={stroke(part(0.88, 0.95))} />
         <circle cx="50" cy="52" r="2.2" pathLength={1} fill="none" stroke="url(#ld-stroke)" strokeWidth="1" style={stroke(part(0.92, 1))} />
-        {/* Logo */}
         <text
           x="50" y="168" textAnchor="middle" fontSize="6.5" letterSpacing="2.4" fill="#fff"
           style={{ opacity: complete ? 0.7 : 0, transition: 'opacity 0.6s ease 0.2s' }}

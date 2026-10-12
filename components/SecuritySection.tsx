@@ -1,6 +1,3 @@
-// Güvenlik ve yazılım: Samsung'un ürün sayfalarındaki Knox, Personal Data Engine, One UI 8.5 ve
-// Quick Share (Apple AirDrop uyumu) bilgileri. Statik bölüm.
-
 const ITEMS = [
   {
     eyebrow: 'Secured by Knox',
@@ -28,7 +25,7 @@ export default function SecuritySection() {
   return (
     <section id="security" className="sg-ambient amb-indigo relative z-10 bg-[#030303] px-6 md:px-[12%] pt-24 md:pt-36 pb-12 md:pb-16">
       <p className="sg-eyebrow mb-5">Security &amp; Software</p>
-      <h2 className="sg-title text-4xl md:text-7xl mb-10 md:mb-16">
+      <h2 className="sg-title mb-10 md:mb-16">
         Protected inside. <br />
         <strong className="sg-ai">Open to everyone.</strong>
       </h2>

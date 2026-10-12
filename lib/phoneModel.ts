@@ -2,15 +2,12 @@ import { useMemo } from 'react';
 import * as THREE from 'three';
 import { useGLTF } from '@react-three/drei';
 
-export const S26_URL = '/model/phone-opt.glb'; // ana sahnedeki S26 Ultra
-export const S25_URL = '/model/s26-opt.glb'; // dosya adı yanıltıcı: içindeki model S25 Ultra (Sketchfab, vmmaniac, CC-BY-4.0)
+export const S26_URL = '/model/phone-opt.glb';
+export const S25_URL = '/model/s26-opt.glb';
 
-// Gerçek ölçüler (mm), telefonlar aynı ölçekte görünsün diye
 export const S26_HEIGHT_MM = 163.6;
 export const S25_HEIGHT_MM = 162.8;
 
-// Hafifletilmiş materyaller (sadece kopyada; ana sahnedeki telefon etkilenmez):
-// transmission her karede sahneyi bir kez daha çizdirir, clearcoat da ek ışık hesabı demek. Görünüm farkı çok az.
 function lighten(mat: THREE.Material) {
   const phys = mat as THREE.MeshPhysicalMaterial;
   if (!phys.isMeshPhysicalMaterial || (phys.transmission === 0 && phys.clearcoat === 0)) return mat;
@@ -25,9 +22,6 @@ function lighten(mat: THREE.Material) {
   return c;
 }
 
-// Modeli normalize eder: en uzun ekseni dikey (Y), ekranı kameraya (+Z) dönük, merkezi orijinde, yüksekliği 1 birim.
-// Ana sahnedeki telefonla aynı nesneyi paylaşmamak için kopya alınır.
-// Dönen nesnenin userData.size'ı normalize edilmiş boyutlardır (yükseklik 1).
 export function useNormalizedPhone(url: string) {
   const { scene } = useGLTF(url);
   return useMemo(() => {
@@ -47,7 +41,6 @@ export function useNormalizedPhone(url: string) {
     else if (size.x > size.y) inner.rotation.z = Math.PI / 2;
     inner.updateMatrixWorld(true);
 
-    // Ekran yüzeyi arkada kaldıysa telefonu çevir (modeller farklı kaynaklardan)
     box = new THREE.Box3().setFromObject(inner);
     const center = box.getCenter(new THREE.Vector3());
     let screen: THREE.Object3D | undefined;
@@ -75,9 +68,6 @@ export function useNormalizedPhone(url: string) {
   }, [scene]);
 }
 
-// Yuvarlak köşeli düz dikdörtgen (telefon ekranı için), UV'leri 0-1 aralığında.
-// uvSquare verilirse UV'ler o kenarlı kareye göre, merkezden ve en-boy oranı korunarak üretilir
-// (dönen dokuda yamulma olmasın diye: three.js dokuyu önce döndürüp sonra ölçekler).
 export function roundedRectGeometry(w: number, h: number, r: number, uvSquare?: number) {
   const s = new THREE.Shape();
   const x = -w / 2;
@@ -102,7 +92,6 @@ export function roundedRectGeometry(w: number, h: number, r: number, uvSquare?: 
   return g;
 }
 
-// 2D çizimden doku (bir kez çizilir; ekran içerikleri için ucuz)
 export function canvasTexture(w: number, h: number, draw: (ctx: CanvasRenderingContext2D) => void) {
   const cv = document.createElement('canvas');
   cv.width = w;
@@ -115,9 +104,6 @@ export function canvasTexture(w: number, h: number, draw: (ctx: CanvasRenderingC
   return t;
 }
 
-// Patlamış görünüm için modelin parçalarını derinliğe göre üç gruba ayırır (normalize edilmiş telefonda):
-// ön (ekran camı), orta (çerçeve, tuşlar), arka (arka cam, kamera adası). Gruplar telefonun içine eklenir;
-// parçalar dünya konumları korunarak taşınır, gruplar Z'de kaydırılarak telefon "açılır".
 export function splitPhoneLayers(holder: THREE.Object3D) {
   holder.updateMatrixWorld(true);
   const size = holder.userData.size as THREE.Vector3;
@@ -133,7 +119,6 @@ export function splitPhoneLayers(holder: THREE.Object3D) {
   });
   const c = new THREE.Vector3();
   meshes.forEach((m) => {
-    // holder'ın üstü yok: dünya koordinatları zaten normalize birimde (yükseklik 1)
     new THREE.Box3().setFromObject(m).getCenter(c);
     (c.z > t ? front : c.z < -t ? back : mid).attach(m);
   });

@@ -6,10 +6,6 @@ import { DesignPhones, type DesignState } from '@/components/SectionPhones';
 import { requestFrame } from '@/lib/sectionCanvas';
 import { smooth, useSectionProgress } from '@/lib/useSectionProgress';
 
-// "En ince Ultra": iki 3D telefon önden başlayıp yan profile döner ve yaklaşır, kalınlık farkı görünür.
-// 3D telefonlar ortak tuvalde (SectionCanvas) çizilir.
-// Bilgi: Samsung (S26 Ultra 7.9 mm / 214 g, S25 Ultra 8.2 mm / 218 g)
-
 const PHONES = [
   { name: 'Galaxy S26 Ultra', mm: '7.9 mm', g: '214 g', main: true },
   { name: 'Galaxy S25 Ultra', mm: '8.2 mm', g: '218 g', main: false },
@@ -34,17 +30,16 @@ export default function DesignSection() {
       <div className="sg-ambient amb-silver sticky top-0 h-svh w-full flex flex-col items-center justify-center gap-3 lg:gap-6 px-6 pt-20 pb-6">
         <div className="text-center">
           <p className="sg-eyebrow mb-2 lg:mb-4">Design</p>
-          <h2 className="sg-title text-3xl lg:text-6xl">
+          <h2 className="sg-title">
             Our <strong className="sg-ai">slimmest Ultra</strong> yet.
           </h2>
-          <p className="text-white/55 text-sm lg:text-lg font-light mt-2 lg:mt-3 max-w-xl mx-auto">
+          <p className="sg-lead mt-2 lg:mt-3 max-w-xl mx-auto">
             A balanced design that brings elegance and comfort together and fits naturally in your hand.
           </p>
         </div>
 
-        {/* 3D telefonlar (ortak tuvalde çizilir; bu kutu sadece yerini belirler) */}
         <div className="relative w-full max-w-3xl">
-          <View className="w-full h-[34svh] lg:h-[44svh]">
+          <View className="w-full h-[30svh] lg:h-[36svh]">
             <Suspense fallback={null}>
               <DesignPhones state={phoneState} />
             </Suspense>
@@ -74,7 +69,7 @@ export default function DesignSection() {
             </div>
           ))}
         </div>
-        <p className="text-[0.6rem] lg:text-xs text-white/35">Compared with Galaxy S25 Ultra, per Samsung.</p>
+        <p className="text-[0.6rem] lg:text-xs text-white/50">Compared with Galaxy S25 Ultra, per Samsung.</p>
       </div>
     </section>
   );

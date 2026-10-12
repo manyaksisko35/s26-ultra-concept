@@ -1,19 +1,14 @@
-import type * as THREE from 'three';
+import * as THREE from 'three';
+import { requestFrame } from '@/lib/sectionCanvas';
 
-// Telefon renkleri için küçük, bağımsız bir store. ColorSection (arayüz) ve Scene (3D) aynı değeri okur.
-// React context gerekmez: Scene başka bir ağaçta (Canvas) çalıştığı için useSyncExternalStore kullanılır.
-
-// Samsung'un S26 Ultra renkleri: Cobalt Violet, Black, Sky Blue, White + sadece Samsung mağazasında Pink Gold.
-// Renk değerleri sitenin ışıklandırması altında, Samsung'un ürün sayfasındaki görsellerle eşleşecek şekilde
-// ölçülerek ayarlandı (Pink Gold için referans görsel olmadığı için tahmini).
 export type PhoneColor = {
   id: string;
   name: string;
-  swatch: string; // renk butonunda görünen renk
-  back: [number, number, number]; // arka yüz rengi (doğrusal RGB)
-  frameGain: number; // çerçeve rengi = arka yüz x bu değer
-  capsuleGain: number; // kamera kapsülü rengi = arka yüz x bu değer
-  glass: number; // arka camın üstündeki yansıma katmanının opaklığı (açık renklerde düşük, yoksa renk koyu kalır)
+  swatch: string;
+  back: [number, number, number];
+  frameGain: number;
+  capsuleGain: number;
+  glass: number;
 };
 
 export const PHONE_COLORS: PhoneColor[] = [
@@ -21,10 +16,10 @@ export const PHONE_COLORS: PhoneColor[] = [
   { id: 'black', name: 'Black', swatch: '#4a4d53', back: [0.05, 0.039, 0.041], frameGain: 1.0, capsuleGain: 2.0, glass: 1.0 },
   { id: 'sky-blue', name: 'Sky Blue', swatch: '#b2cbd9', back: [0.357, 0.499, 0.646], frameGain: 1.0, capsuleGain: 1.3, glass: 0.6 },
   { id: 'white', name: 'White', swatch: '#f3f5f7', back: [1.276, 1.117, 1.157], frameGain: 1.0, capsuleGain: 1.0, glass: 0.3 },
+  { id: 'silver', name: 'Silver', swatch: '#c4c6c9', back: [0.67, 0.55, 0.55], frameGain: 1.05, capsuleGain: 1.1, glass: 0.4 },
   { id: 'pink-gold', name: 'Pink Gold', swatch: '#e5c3b9', back: [1.793, 0.526, 0.418], frameGain: 1.0, capsuleGain: 1.1, glass: 0.5 },
 ];
 
-// Modeldeki (phone-opt.glb) materyal adları -> telefonun hangi parçası
 export const PART_BY_MATERIAL: Record<string, 'back' | 'frame' | 'capsule' | 'glass'> = {
   PaletteMaterial007: 'back',
   Material_195: 'frame',
@@ -32,8 +27,6 @@ export const PART_BY_MATERIAL: Record<string, 'back' | 'frame' | 'capsule' | 'gl
   Material_181: 'glass',
 };
 
-// Yelpazedeki sıra (soldan sağa, Samsung'un sayfasındaki sıra). Ortadaki (FAN_CENTER), sayfada scroll ile gelen
-// asıl telefondur; o da bu renklerden birine boyanır (Sky Blue).
 export const FAN_COLORS: PhoneColor[] = PHONE_COLORS;
 export const FAN_CENTER = FAN_COLORS.findIndex((c) => c.id === 'sky-blue');
 
@@ -57,13 +50,57 @@ export const subscribeColor = (l: () => void) => {
   };
 };
 
-// Bir telefon modelinin renk materyallerini verilen renge boyar (arka yüz, çerçeve, kamera kapsülü, cam katmanı)
+export const WALL_MATERIAL = 'Material_173';
+const DEFAULT_WALL = 'sky-blue';
+const walls = new Map<string, THREE.Texture | 'loading'>();
+const waiting = new Map<string, Set<THREE.MeshStandardMaterial>>();
+const wanted = new WeakMap<THREE.Material, string>();
+let baseWall: THREE.Texture | null = null;
+
+function setWallpaper(mat: THREE.MeshStandardMaterial, id: string) {
+  baseWall ??= mat.emissiveMap;
+  const base = baseWall;
+  wanted.set(mat, id);
+  if (!base) return;
+  if (id === DEFAULT_WALL) {
+    mat.emissiveMap = base;
+    return;
+  }
+  const cached = walls.get(id);
+  if (cached && cached !== 'loading') {
+    mat.emissiveMap = cached;
+    return;
+  }
+  if (!waiting.has(id)) waiting.set(id, new Set());
+  waiting.get(id)!.add(mat);
+  if (cached === 'loading') return;
+  walls.set(id, 'loading');
+  new THREE.TextureLoader().load(`/wallpapers/${id}.webp`, (tex) => {
+    tex.flipY = base.flipY;
+    tex.colorSpace = base.colorSpace;
+    tex.channel = base.channel;
+    tex.wrapS = base.wrapS;
+    tex.wrapT = base.wrapT;
+    tex.anisotropy = base.anisotropy;
+    walls.set(id, tex);
+    waiting.get(id)?.forEach((m) => {
+      if (wanted.get(m) === id) m.emissiveMap = tex;
+    });
+    waiting.delete(id);
+    requestFrame();
+  });
+}
+
 export function applyPreset(root: THREE.Object3D, preset: PhoneColor) {
   root.traverse((o) => {
     const m = o as THREE.Mesh;
     if (!m.isMesh) return;
     (Array.isArray(m.material) ? m.material : [m.material]).forEach((mat) => {
       const std = mat as THREE.MeshStandardMaterial;
+      if (std.name === WALL_MATERIAL) {
+        setWallpaper(std, preset.id);
+        return;
+      }
       const part = PART_BY_MATERIAL[std.name];
       if (!part) return;
       if (part === 'glass') {
@@ -72,7 +109,6 @@ export function applyPreset(root: THREE.Object3D, preset: PhoneColor) {
       }
       const k = part === 'frame' ? preset.frameGain : part === 'capsule' ? preset.capsuleGain : 1;
       std.color.setRGB(preset.back[0] * k, preset.back[1] * k, preset.back[2] * k);
-      // Model tam metalik ve ortam haritasız olduğu için ışık altında çok koyu kalıyordu; cam gibi bir yüzeye çevrilir
       std.metalness = part === 'back' ? 0.1 : 0.2;
       std.roughness = part === 'back' ? 0.4 : 0.45;
     });

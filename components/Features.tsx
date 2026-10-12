@@ -9,7 +9,7 @@ export default function Features() {
           <h3 className="sg-title text-2xl md:text-5xl mb-2 md:mb-4">
             6.9<span className="text-lg md:text-2xl text-white/50">&quot;</span> <strong>Dynamic AMOLED 2X</strong>
           </h3>
-          <p className="text-white/55 font-light text-sm md:text-lg">
+          <p className="sg-lead">
             QHD+ clarity, 120Hz adaptive refresh and up to 2600 nits, with an anti-reflective
             Gorilla Armor 2 and a built-in Privacy Display.
           </p>

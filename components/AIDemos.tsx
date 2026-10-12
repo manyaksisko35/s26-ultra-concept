@@ -2,9 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { playSound } from '@/lib/sound';
-
-// Galaxy AI canlı demoları: üç sekme (Live Translate, Circle to Search, Photo Assist). Ekrandayken sırayla
-// kendiliğinden oynar; sekmeye tıklanınca o demo baştan başlar. Sadece CSS geçişleri ve SVG (3D yok).
+import { useReducedMotion } from '@/lib/useReducedMotion';
 
 const DEMOS = [
   { id: 'translate', title: 'Live Translate', caption: 'Real-time translation of calls and conversations, on device.', steps: 6 },
@@ -12,10 +10,9 @@ const DEMOS = [
   { id: 'photo', title: 'Photo Assist', caption: 'Describe the edit in your own words and Galaxy AI does it.', steps: 5 },
 ] as const;
 
-const STEP_MS = 1100; // her adım arası
-const HOLD_STEPS = 3; // demo bitince bekleme (adım cinsinden)
+const STEP_MS = 1100;
+const HOLD_STEPS = 3;
 
-// Yazılıyormuş gibi beliren metin (görünür olunca). Uzun metin alt satıra kayabilir.
 function Typed({ text, show }: { text: string; show: boolean }) {
   return (
     <span className="relative block">
@@ -66,7 +63,6 @@ function CircleDemo({ step }: { step: number }) {
       <svg viewBox="0 0 400 300" className="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid slice">
         <rect width="400" height="300" fill="#e9dccb" />
         <rect y="200" width="400" height="100" fill="#cbb79e" />
-        {/* masa üstünde güneş gözlüğü ve kahve */}
         <rect x="250" y="150" width="46" height="56" rx="6" fill="#f5f1ea" />
         <rect x="296" y="164" width="12" height="22" rx="6" fill="none" stroke="#f5f1ea" strokeWidth="5" />
         <ellipse cx="273" cy="152" rx="23" ry="5" fill="#6b4226" />
@@ -78,7 +74,6 @@ function CircleDemo({ step }: { step: number }) {
           <ellipse cx="-8" cy="-7" rx="10" ry="5" fill="#ffffff" opacity="0.25" />
           <ellipse cx="64" cy="-7" rx="10" ry="5" fill="#ffffff" opacity="0.25" />
         </g>
-        {/* parmakla çizilen daire */}
         <path
           d="M95 150 C 60 152, 52 205, 110 214 C 170 222, 226 214, 228 184 C 230 150, 170 140, 120 146"
           fill="none"
@@ -89,7 +84,6 @@ function CircleDemo({ step }: { step: number }) {
           style={{ strokeDasharray: 1, strokeDashoffset: step >= 1 ? 0 : 1, transition: 'stroke-dashoffset 0.9s ease-in-out' }}
         />
       </svg>
-      {/* Sonuç kartı */}
       <div
         className={`absolute inset-x-3 lg:inset-x-8 bottom-3 rounded-2xl bg-[#111318] border border-white/10 p-4 transition-all duration-500 ${
           step >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
@@ -123,14 +117,12 @@ function PhotoDemo({ step }: { step: number }) {
         <rect width="400" height="300" fill="url(#pa-sky)" />
         <path d="M0 190 L90 120 L170 175 L250 105 L400 190 L400 300 L0 300 Z" fill="#5d7f6a" />
         <rect y="230" width="400" height="70" fill="#d8c79a" />
-        {/* plajdaki kişi (fotoğrafın konusu) */}
         <g transform="translate(120 175)">
           <circle cx="0" cy="0" r="10" fill="#7a4a32" />
           <rect x="-9" y="10" width="18" height="34" rx="6" fill="#e2574c" />
           <rect x="-8" y="44" width="7" height="22" fill="#2f3a4b" />
           <rect x="1" y="44" width="7" height="22" fill="#2f3a4b" />
         </g>
-        {/* silinecek nesne: çöp kutusu */}
         <g
           transform="translate(280 205)"
           style={{ opacity: erased ? 0 : 1, transition: 'opacity 0.8s ease', filter: erased ? 'blur(6px)' : 'none' }}
@@ -138,7 +130,6 @@ function PhotoDemo({ step }: { step: number }) {
           <rect x="-16" y="0" width="32" height="40" rx="3" fill="#3d4450" />
           <rect x="-19" y="-5" width="38" height="7" rx="2" fill="#2b3038" />
         </g>
-        {/* seçim çerçevesi ve ışıltı */}
         <rect
           x="256" y="192" width="48" height="58" rx="8" fill="none" stroke="#fff" strokeWidth="2" strokeDasharray="6 5"
           style={{ opacity: step >= 2 && !erased ? 1 : 0, transition: 'opacity 0.3s' }}
@@ -157,7 +148,6 @@ function PhotoDemo({ step }: { step: number }) {
           />
         ))}
       </svg>
-      {/* Komut kutusu */}
       <div className="absolute inset-x-3 lg:inset-x-8 bottom-3 rounded-full bg-[#111318]/90 border border-white/10 px-4 py-2.5 flex items-center gap-3">
         <span className="sg-ai text-sm font-semibold">✦</span>
         <span className="text-sm flex-1">
@@ -171,11 +161,11 @@ function PhotoDemo({ step }: { step: number }) {
 
 export default function AIDemos() {
   const [demo, setDemo] = useState(0);
-  const [step, setStep] = useState(0);
+  const [rawStep, setStep] = useState(0);
+  const reduce = useReducedMotion();
   const boxRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
 
-  // Sadece ekrandayken oynar
   useEffect(() => {
     const el = boxRef.current;
     if (!el) return;
@@ -185,16 +175,16 @@ export default function AIDemos() {
   }, []);
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible || reduce) return;
     const t = window.setTimeout(() => {
-      if (step < DEMOS[demo].steps + HOLD_STEPS) setStep((s) => s + 1);
+      if (rawStep < DEMOS[demo].steps + HOLD_STEPS) setStep((s) => s + 1);
       else {
         setDemo((d) => (d + 1) % DEMOS.length);
         setStep(0);
       }
-    }, step === 0 ? 500 : STEP_MS);
+    }, rawStep === 0 ? 500 : STEP_MS);
     return () => window.clearTimeout(t);
-  }, [visible, demo, step]);
+  }, [visible, demo, rawStep, reduce]);
 
   const pick = (i: number) => {
     playSound('tick');
@@ -202,6 +192,7 @@ export default function AIDemos() {
     setStep(0);
   };
 
+  const step = reduce ? DEMOS[demo].steps : rawStep;
   const d = DEMOS[demo];
   return (
     <div ref={boxRef} className="relative max-w-6xl mb-10 lg:mb-14">
@@ -222,15 +213,18 @@ export default function AIDemos() {
       </div>
 
       <div className="grid lg:grid-cols-[1.4fr_1fr] gap-4 lg:gap-8 items-center">
-        <div className="relative h-[300px] lg:h-[380px] rounded-[28px] overflow-hidden border border-white/10 bg-[#0b0d12]">
+        <div
+          role="tabpanel"
+          aria-label={d.title}
+          className="relative h-[300px] lg:h-[380px] rounded-[28px] overflow-hidden border border-white/10 bg-[#0b0d12]"
+        >
           {demo === 0 && <TranslateDemo step={step} />}
           {demo === 1 && <CircleDemo step={step} />}
           {demo === 2 && <PhotoDemo step={step} />}
         </div>
         <div>
           <h3 className="text-3xl lg:text-5xl font-semibold mb-3">{d.title}</h3>
-          <p className="text-white/55 text-lg font-light mb-5">{d.caption}</p>
-          {/* Demo ilerleme çubuğu */}
+          <p className="sg-lead mb-5">{d.caption}</p>
           <div className="h-0.5 w-40 bg-white/10 rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-cyan-300 to-violet-400 transition-[width] duration-700"

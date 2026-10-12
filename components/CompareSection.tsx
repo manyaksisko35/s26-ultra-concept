@@ -4,7 +4,8 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Preload, useGLTF } from '@react-three/drei';
 import { RimLight, StudioEnv } from '@/components/StudioEnv';
 import { S25_HEIGHT_MM, S25_URL, S26_HEIGHT_MM, S26_URL, useNormalizedPhone } from '@/lib/phoneModel';
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { createSpin, stepSpin, useDragSpin, type Spin } from '@/lib/dragSpin';
 import * as THREE from 'three';
 import { COMPARE_GAINS, COMPARE_ROWS } from '@/lib/compareSpecs';
 
@@ -14,12 +15,10 @@ const smooth = (v: number) => {
   return t * t * (3 - 2 * t);
 };
 
-// Bölümün scroll ilerlemesi (0 = bölüm ekranı doldurdu, 1 = sabit kısım bitti). Canvas ve HTML aynı değeri okur.
 const progress = { p: 0 };
-// Mobilde telefonların duracağı alan (ekran yüksekliğine oranla, DOM'dan ölçülür; isimler bu alanın altında)
 const zone = { top: 0.2, bottom: 0.5, label: 0.05 };
-// Canvas talep üzerine çizilir (frameloop="demand"): scroll değişince ya da telefonlar hedefe varmadıysa yeni kare istenir
 let requestFrame: () => void = () => {};
+const spins = { left: createSpin(), right: createSpin() };
 
 function FrameBridge({ active }: { active: boolean }) {
   const invalidate = useThree((s) => s.invalidate);
@@ -29,16 +28,16 @@ function FrameBridge({ active }: { active: boolean }) {
       requestFrame = () => {};
     };
   }, [invalidate]);
-  // Çizim yeniden açıldığında ilk kareyi iste (sonrakileri telefonlar hedefe varana kadar kendileri ister)
   useEffect(() => {
     if (active) invalidate();
   }, [active, invalidate]);
   return null;
 }
 
-function Phone({ url, side, heightMm }: { url: string; side: -1 | 1; heightMm: number }) {
+function Phone({ url, side, heightMm, drag }: { url: string; side: -1 | 1; heightMm: number; drag: Spin }) {
   const obj = useNormalizedPhone(url);
   const ref = useRef<THREE.Group>(null);
+  const spinRef = useRef<THREE.Group>(null);
   const { viewport, size } = useThree();
 
   useFrame((_, rawDt) => {
@@ -47,18 +46,16 @@ function Phone({ url, side, heightMm }: { url: string; side: -1 | 1; heightMm: n
     const p = progress.p;
     const mobile = size.width < 1024;
 
-    // Yerleşim: masaüstünde iki yanda; mobilde başlık ile tablo arasındaki alanda (isimlerin üstünde) yan yana
     const zoneH = zone.bottom - zone.top - zone.label;
     const h = (mobile ? viewport.height * zoneH * 0.9 : viewport.height * 0.56) * (heightMm / S26_HEIGHT_MM);
     const tx = mobile ? viewport.width * 0.22 * side : viewport.width * 0.385 * side;
     const ty = mobile ? viewport.height * (0.5 - (zone.top + zoneH / 2)) : -viewport.height * 0.02;
 
-    // 1) İki yandan kayarak girer, 2) arkasını gösterip kendi ekseninde döner, ekranı öne gelir, hafif içe bakar
     const enter = smooth(p / 0.25);
     const spin = smooth((p - 0.12) / 0.45);
     const x = tx + side * viewport.width * 0.4 * (1 - enter);
     const rotY = Math.PI * (1 - spin) - side * 0.3 * spin;
-    const dt = Math.min(rawDt, 0.1); // talep üzerine çizimde kareler arası uzun boşluk zıplama yapmasın
+    const dt = Math.min(rawDt, 0.1);
 
     g.position.x = THREE.MathUtils.damp(g.position.x, x, 6, dt);
     g.position.y = THREE.MathUtils.damp(g.position.y, ty, 6, dt);
@@ -67,13 +64,20 @@ function Phone({ url, side, heightMm }: { url: string; side: -1 | 1; heightMm: n
     const s = THREE.MathUtils.damp(g.scale.x, h, 6, dt);
     g.scale.setScalar(s);
 
-    // Hedefe varılmadıysa bir kare daha iste; vardıysa sahne durur (GPU boşta kalır)
-    if (Math.abs(g.position.x - x) + Math.abs(g.rotation.y - rotY) + Math.abs(s - h) > 0.001) requestFrame();
+    const spinning = stepSpin(drag, dt);
+    if (spinRef.current) {
+      spinRef.current.rotation.y = drag.yaw;
+      spinRef.current.rotation.x = drag.pitch;
+    }
+
+    if (spinning || Math.abs(g.position.x - x) + Math.abs(g.rotation.y - rotY) + Math.abs(s - h) > 0.001) requestFrame();
   });
 
   return (
     <group ref={ref} scale={0.001} position={[side * 10, 0, 0]}>
-      <primitive object={obj} />
+      <group ref={spinRef}>
+        <primitive object={obj} />
+      </group>
     </group>
   );
 }
@@ -82,17 +86,31 @@ export default function CompareSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const rowsRef = useRef<(HTMLDivElement | null)[]>([]);
   const headRef = useRef<HTMLDivElement>(null);
-  const labelsRef = useRef<HTMLDivElement>(null); // mobil isimler
-  const deskLabelsRef = useRef<HTMLDivElement>(null); // masaüstü isimler
-  const stickyRef = useRef<HTMLDivElement>(null); // ekrana sabitlenen kapsayıcı (ölçüler buna göre)
-  const zoneRef = useRef<HTMLDivElement>(null); // mobilde telefon alanı
-  const tableWrapRef = useRef<HTMLDivElement>(null); // tablonun görünür alanı
-  const tableRef = useRef<HTMLDivElement>(null); // tablo içeriği (sığmazsa alana sığacak kadar küçültülür)
-  const [mounted, setMounted] = useState(false); // ilk yaklaşmada bir kez kurulur, sonra kalır (yeniden kurulum takılma yapar)
+  const labelsRef = useRef<HTMLDivElement>(null);
+  const deskLabelsRef = useRef<HTMLDivElement>(null);
+  const stickyRef = useRef<HTMLDivElement>(null);
+  const zoneRef = useRef<HTMLDivElement>(null);
+  const tableWrapRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
   const [near, setNear] = useState(false);
 
-  // Canvas bölüme 2 ekran kala kurulur ve shader'lar önceden derlenir (bölüme girerken takılma olmasın);
-  // sadece bölüm ekranda/yakındayken çizilir (ana sahneyle aynı anda GPU harcamasın)
+  const pickSpin = useCallback((e: PointerEvent, el: HTMLElement) => {
+    if (progress.p < 0.2) return null;
+    const box = el.getBoundingClientRect();
+    const fx = (e.clientX - box.left) / box.width;
+    if (box.width < 1024) {
+      const z = zoneRef.current?.getBoundingClientRect();
+      if (!z || e.clientY < z.top || e.clientY > z.bottom) return null;
+      return fx < 0.5 ? spins.left : spins.right;
+    }
+    if (fx < 0.3) return spins.left;
+    if (fx > 0.7) return spins.right;
+    return null;
+  }, []);
+  const kick = useCallback(() => requestFrame(), []);
+  useDragSpin(stickyRef, pickSpin, kick);
+
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
@@ -108,7 +126,6 @@ export default function CompareSection() {
     };
   }, []);
 
-  // Scroll ilerlemesi -> 3D telefonlar + tablo satırlarının sırayla belirmesi (state tutmadan, doğrudan stil)
   useEffect(() => {
     let raf = 0;
     let lastP = -1;
@@ -119,7 +136,7 @@ export default function CompareSection() {
       const vh = window.innerHeight;
       const top = sec.getBoundingClientRect().top;
       const p = clamp01(-top / Math.max(1, sec.offsetHeight - vh));
-      if (p === lastP) return; // bölüm dışında (0 veya 1'de sabit) gereksiz stil yazma
+      if (p === lastP) return;
       lastP = p;
       progress.p = p;
       requestFrame();
@@ -142,13 +159,10 @@ export default function CompareSection() {
         row.style.transform = `translateY(${(1 - v) * 16}px)`;
       });
     };
-    // Scroll olayı karede birkaç kez gelebilir; DOM'a karede en fazla bir kez yazılır
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(update);
     };
-    // Ölçüler sadece boyut değişince okunur (her scroll'da layout okumamak için)
     const measure = () => {
-      // Bölüm o an ekranda olmayabilir: konumlar sabit kapsayıcının üstüne göre alınır
       const box = stickyRef.current?.getBoundingClientRect();
       const z = zoneRef.current?.getBoundingClientRect();
       const lb = labelsRef.current?.getBoundingClientRect();
@@ -159,7 +173,6 @@ export default function CompareSection() {
       }
       const wrap = tableWrapRef.current;
       const table = tableRef.current;
-      // Tablo alana sığmıyorsa (kısa ekran) hepsi aynı anda görünsün diye orantılı küçültülür; kaydırma yok
       if (wrap && table) {
         const fit = Math.min(1, wrap.clientHeight / Math.max(1, table.scrollHeight));
         table.style.transform = fit < 1 ? `scale(${fit})` : '';
@@ -181,9 +194,8 @@ export default function CompareSection() {
   }, []);
 
   return (
-    // 350svh: telefonlar girip döner, ardından özellikler satır satır belirir; son kısımda tablo sabit kalır
     <section ref={sectionRef} id="compare" className="relative z-10 w-full h-[350svh] bg-[#030303]">
-      <div ref={stickyRef} className="sg-ambient amb-cyan sticky top-0 h-svh w-full overflow-hidden">
+      <div ref={stickyRef} className="sg-ambient amb-cyan sticky top-0 h-svh w-full overflow-hidden touch-pan-y">
         <div className="absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-cyan-500/10 to-transparent pointer-events-none" />
 
         {mounted && (
@@ -204,8 +216,8 @@ export default function CompareSection() {
             <directionalLight position={[0, -5, 10]} intensity={3} />
             <FrameBridge active={near} />
             <Suspense fallback={null}>
-              <Phone url={S26_URL} side={-1} heightMm={S26_HEIGHT_MM} />
-              <Phone url={S25_URL} side={1} heightMm={S25_HEIGHT_MM} />
+              <Phone url={S26_URL} side={-1} heightMm={S26_HEIGHT_MM} drag={spins.left} />
+              <Phone url={S25_URL} side={1} heightMm={S25_HEIGHT_MM} drag={spins.right} />
               <Preload all />
             </Suspense>
           </Canvas>
@@ -214,12 +226,11 @@ export default function CompareSection() {
         <div className="relative h-full flex flex-col items-center px-4 lg:px-0 pt-20 lg:pt-24 pb-4 lg:pb-6 pointer-events-none">
           <div ref={headRef} className="flex-none text-center opacity-0">
             <p className="sg-eyebrow mb-2 lg:mb-4">Compare</p>
-            <h2 className="sg-title text-3xl lg:text-6xl">
+            <h2 className="sg-title">
               <strong>S26 Ultra</strong> vs S25 Ultra
             </h2>
           </div>
 
-          {/* Mobil: telefonların alanı (3D telefonlar bu alanın ölçüsüne göre yerleşir), isimler en altında */}
           <div ref={zoneRef} className="lg:hidden flex-none w-full h-[clamp(130px,28svh,300px)] flex items-end">
             <div ref={labelsRef} className="w-full flex justify-between px-[4%] pt-1 opacity-0">
               <span className="w-1/2 text-center text-sm font-semibold">Galaxy S26 Ultra</span>
@@ -227,16 +238,15 @@ export default function CompareSection() {
             </div>
           </div>
 
-          {/* Masaüstü: isimler telefonların altında */}
           <div
             ref={deskLabelsRef}
             className="max-lg:hidden absolute inset-x-0 bottom-[4%] flex justify-between px-[2%] opacity-0"
           >
             <span className="w-[22%] text-center text-lg font-semibold">Galaxy S26 Ultra</span>
             <span className="w-[22%] text-center text-lg font-light text-white/60">Galaxy S25 Ultra</span>
+            <span className="absolute left-1/2 -translate-x-1/2 bottom-0 text-xs text-white/40">Drag a phone to spin it</span>
           </div>
 
-          {/* Tablo: kalan alana sığar; sığmazsa içerik scroll ile yukarı kayar */}
           <div
             ref={tableWrapRef}
             className="flex-1 min-h-0 w-full max-w-[46vw] max-lg:max-w-full mt-3 lg:mt-6 overflow-hidden flex flex-col"
@@ -285,4 +295,11 @@ export default function CompareSection() {
   );
 }
 
-useGLTF.preload(S25_URL);
+if (typeof window !== 'undefined') {
+  const preload = () => useGLTF.preload(S25_URL);
+  window.addEventListener(
+    'load',
+    () => ('requestIdleCallback' in window ? window.requestIdleCallback(preload, { timeout: 4000 }) : setTimeout(preload, 2000)),
+    { once: true }
+  );
+}

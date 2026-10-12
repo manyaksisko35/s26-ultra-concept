@@ -4,12 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { playSound } from "@/lib/sound";
 
-// "View in your room": Galaxy S26 Ultra'yı gerçek boyutunda (163.6 mm) artırılmış gerçeklikte gösterir.
-// Android: Scene Viewer / WebXR, iPhone: Quick Look (USDZ'yi model-viewer anında üretir).
-// Bilgisayarda: modeli sürükleyip çevirme + "telefonundan aç" yönergesi.
-// model-viewer (Google, Apache-2.0) sadece pencere açılınca yüklenir: public/vendor/model-viewer.min.js
 const SCRIPT_SRC = "/vendor/model-viewer.min.js";
-const MODEL_SRC = "/model/s26-ar.glb"; // gerçek boyutta, Sky Blue, ekranı yukarı bakan AR modeli
+const modelSrc = (colorId: string) => `/model/s26-ar-${colorId}.glb`;
 
 let loading: Promise<void> | null = null;
 function loadModelViewer() {
@@ -34,15 +30,22 @@ type ModelViewerEl = HTMLElement & {
   activateAR?: () => void;
 };
 
-export default function ARViewer({ className = "" }: { className?: string }) {
+export default function ARViewer({
+  colorId = "sky-blue",
+  colorName = "Sky Blue",
+  className = "",
+}: {
+  colorId?: string;
+  colorName?: string;
+  className?: string;
+}) {
   const [open, setOpen] = useState(false);
   const [ready, setReady] = useState(false);
   const [canAR, setCanAR] = useState(false);
-  const [mobile, setMobile] = useState(false); // telefon/tablet: AR butonu her zaman gösterilir
+  const [mobile, setMobile] = useState(false);
   const [error, setError] = useState(false);
   const viewerRef = useRef<ModelViewerEl | null>(null);
 
-  // Pencere açılınca kütüphaneyi yükle
   useEffect(() => {
     if (!open) return;
     let alive = true;
@@ -54,8 +57,6 @@ export default function ARViewer({ className = "" }: { className?: string }) {
     };
   }, [open]);
 
-  // AR desteği: model-viewer AR modunu arka planda, kendi zamanlamasıyla belirler; o yüzden bir kez değil,
-  // birkaç saniye boyunca tekrar tekrar kontrol edilir (bulunca durur)
   useEffect(() => {
     const el = viewerRef.current;
     if (!ready || !el) return;
@@ -83,7 +84,6 @@ export default function ARViewer({ className = "" }: { className?: string }) {
   };
   const showAR = canAR || mobile;
 
-  // Esc ile kapanır; açıkken sayfa kaymaz
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
@@ -100,7 +100,6 @@ export default function ARViewer({ className = "" }: { className?: string }) {
     <>
       <button
         onClick={() => {
-          // Telefon/tablet mi? (iPadOS kendini Mac gibi tanıtır: dokunmatik Mac = iPad)
           const ipad = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
           setMobile(/android|iphone|ipad|ipod/i.test(navigator.userAgent) || ipad);
           setOpen(true);
@@ -123,8 +122,6 @@ export default function ARViewer({ className = "" }: { className?: string }) {
         View in your room
       </button>
 
-      {/* Pencere sayfanın köküne taşınır: bölümün kendi katman sırası (z-10) yüzünden ortak 3D tuvalin (z-20)
-          altında kalmasın */}
       {open &&
         createPortal(
           <div
@@ -149,9 +146,9 @@ export default function ARViewer({ className = "" }: { className?: string }) {
                     ref={(el: HTMLElement | null) => {
                       viewerRef.current = el as ModelViewerEl | null;
                     }}
-                    src={MODEL_SRC}
-                    alt="Galaxy S26 Ultra in Sky Blue"
-                    // React 19 özel elemanlarda eşleşen özelliği (el.ar) doğrudan atar: "" yanlış sayılır, true olmalı
+                    key={colorId}
+                    src={modelSrc(colorId)}
+                    alt={`Galaxy S26 Ultra in ${colorName}`}
                     ar
                     ar-modes="webxr scene-viewer quick-look"
                     ar-scale="fixed"
@@ -170,7 +167,6 @@ export default function ARViewer({ className = "" }: { className?: string }) {
                       background: "transparent",
                     }}
                   >
-                    {/* model-viewer'ın kendi AR butonu gizlenir; aşağıdaki kendi butonumuz kullanılır */}
                     <span slot="ar-button" style={{ display: "none" }} />
                   </model-viewer>
                 )}
@@ -197,7 +193,7 @@ export default function ARViewer({ className = "" }: { className?: string }) {
 
               <div className="border-t border-white/10 px-6 py-5">
                 <p className="text-lg font-semibold mb-1">
-                  See it at real size.
+                  See it at real size, in {colorName}.
                 </p>
                 <p className="text-white/55 text-sm font-light">
                   {showAR
@@ -205,13 +201,11 @@ export default function ARViewer({ className = "" }: { className?: string }) {
                     : "Drag to rotate. Open this page on your phone (Android with ARCore or iPhone) to place Galaxy S26 Ultra on your desk at its true size."}
                 </p>
                 {mobile && !canAR && (
-                  <p className="text-white/35 text-xs font-light mt-2">
+                  <p className="text-white/50 text-xs font-light mt-2">
                     If the camera doesn&apos;t open: on Android install &quot;Google Play Services for AR&quot;; on iPhone
                     use Safari or Chrome.
                   </p>
                 )}
-                <p className="hidden">
-                </p>
               </div>
             </div>
           </div>,

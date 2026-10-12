@@ -1,8 +1,5 @@
 'use client';
 
-// Super Steady, Privacy Display, Design, Inside (patlamış görünüm) ve Build (yapılandırıcı) bölümlerinin 3D sahneleri (ortak tuvaldeki View'ların içeriği).
-// Performans: ışıksız (MeshBasic) ekran dokuları bir kez 2D çizilir; sadece hedefe varılmamışsa kare istenir.
-
 import { useFrame, useThree } from '@react-three/fiber';
 import { PerspectiveCamera } from '@react-three/drei';
 import { useEffect, useMemo, useRef } from 'react';
@@ -17,16 +14,13 @@ import {
   splitPhoneLayers,
   useNormalizedPhone,
 } from '@/lib/phoneModel';
-import { PART_BY_MATERIAL, PHONE_COLORS, applyPreset } from '@/lib/phoneColor';
+import { PART_BY_MATERIAL, PHONE_COLORS, WALL_MATERIAL, applyPreset } from '@/lib/phoneColor';
 import { requestFrame } from '@/lib/sectionCanvas';
 import { RimLight, SoftShadow, StudioEnv } from '@/components/StudioEnv';
 
 const damp = THREE.MathUtils.damp;
 const near = (a: number, b: number) => Math.abs(a - b) < 0.0005;
 
-// Ön ısıtma: tuval kurulur kurulmaz (bölüm henüz ekranda değilken) bu sahnenin shader'larını arka planda derler
-// ve dokularını GPU'ya yükler. Yoksa hepsi telefon ekrana ilk girdiğinde yapılır ve modeller geç görünür.
-// Sahnenin son çocuğu olarak konur: effect'ler sırayla çalıştığı için o an tüm telefon nesneleri sahnededir.
 function Warmup() {
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
@@ -53,7 +47,6 @@ function Warmup() {
 function Lights() {
   return (
     <>
-      {/* Stüdyo yansımaları dolguyu sağladığı için ortam ışığı azaltıldı */}
       <StudioEnv intensity={0.9} />
       <ambientLight intensity={1.3} />
       <directionalLight position={[3, 4, 5]} intensity={3} />
@@ -63,7 +56,6 @@ function Lights() {
   );
 }
 
-// Telefon ekranının boyutu (normalize modelde) ve önünde duracağı derinlik
 function useScreenSpec(phone: THREE.Object3D) {
   return useMemo(() => {
     const size = phone.userData.size as THREE.Vector3;
@@ -71,8 +63,6 @@ function useScreenSpec(phone: THREE.Object3D) {
   }, [phone]);
 }
 
-// Ön kamera deliği (punch-hole): ekranın üst ortasında siyah daire ve ince lens halkası.
-// Ekran dokusunun hemen önünde durur; telefonla birlikte döner.
 const holeMat = new THREE.MeshBasicMaterial({ color: '#000000', toneMapped: false });
 const ringMat = new THREE.MeshBasicMaterial({ color: '#1c2230', toneMapped: false });
 const circleGeo = new THREE.CircleGeometry(1, 32);
@@ -86,11 +76,8 @@ function PunchHole({ spec }: { spec: { h: number; z: number; hole: number } }) {
   );
 }
 
-// ---------------- Privacy Display ----------------
-
 export type PrivacyState = { angle: number; on: boolean };
 
-// Ekrandaki mesajlaşma ekranı (gizli kalması gereken içerik), bir kez çizilir
 function drawChat(ctx: CanvasRenderingContext2D) {
   const W = 540;
   const H = 1170;
@@ -99,7 +86,6 @@ function drawChat(ctx: CanvasRenderingContext2D) {
   g.addColorStop(1, '#080b13');
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
-  // Durum çubuğu iki yanda (ortada ön kamera deliği var)
   ctx.font = '600 24px sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.65)';
   ctx.fillText('9:41', 40, 50);
@@ -170,11 +156,9 @@ export function PrivacyPhone({ state }: { state: React.RefObject<PrivacyState> }
     const dt = Math.min(rawDt, 0.1);
     const target = THREE.MathUtils.degToRad(-s.angle);
     g.rotation.y = damp(g.rotation.y, target, 8, dt);
-    // Gerçek açıya göre karartma: Privacy açıkken ~15°'den sonra hızla kararır, kapalıyken çok az
     const a = Math.abs(THREE.MathUtils.radToDeg(g.rotation.y));
     const t = (v: number) => Math.min(1, Math.max(0, v));
     const dim = s.on ? t((a - 14) / 24) * 0.99 : t((a - 40) / 30) * 0.15;
-    // Renk lineer uzayda: algılanan parlaklık (sRGB) için üs alınır, yoksa %5 bile gözle ~%25 görünür
     mat.color.setScalar(Math.pow(1 - dim, 2.2));
     if (!near(g.rotation.y, target)) requestFrame();
   });
@@ -194,11 +178,8 @@ export function PrivacyPhone({ state }: { state: React.RefObject<PrivacyState> }
   );
 }
 
-// ---------------- Super Steady ----------------
-
 export type SteadyState = { angle: number; bob: number };
 
-// Kayıttaki video: gün batımı ve dağlar (kare doku; dönünce köşeler görünmesin diye ekrandan büyük kullanılır)
 function drawSunset(ctx: CanvasRenderingContext2D) {
   const S = 1024;
   const g = ctx.createLinearGradient(0, 0, 0, S);
@@ -227,8 +208,6 @@ export function SteadyPhone({ state }: { state: React.RefObject<SteadyState> }) 
   const phone = useNormalizedPhone(S26_URL);
   const spec = useScreenSpec(phone);
   const group = useRef<THREE.Group>(null);
-  // Ekran, kare dokunun ortasından piksel oranı korunarak alınır; kare kenarı ekranın köşegeni kadar,
-  // böylece doku hangi açıda dönerse dönsün ekranın köşeleri doku içinde kalır
   const geo = useMemo(() => roundedRectGeometry(spec.w, spec.h, spec.r, Math.hypot(spec.w, spec.h) * 1.02), [spec]);
   const tex = useMemo(() => {
     const t = canvasTexture(1024, 1024, drawSunset);
@@ -236,7 +215,7 @@ export function SteadyPhone({ state }: { state: React.RefObject<SteadyState> }) 
     return t;
   }, []);
   const mat = useMemo(() => new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }), [tex]);
-  const texRef = useRef<THREE.Texture | null>(null); // her karede döndürülen doku (ref üzerinden)
+  const texRef = useRef<THREE.Texture | null>(null);
   useEffect(() => {
     texRef.current = tex;
     return () => {
@@ -252,7 +231,6 @@ export function SteadyPhone({ state }: { state: React.RefObject<SteadyState> }) 
     const t = texRef.current;
     if (!g || !s || !t) return;
     const dt = Math.min(rawDt, 0.1);
-    // Yatay tutulan telefon (π/2) + scroll ile 360° dönüş; ekrandaki görüntü ters döner, ufuk düz kalır
     const target = Math.PI / 2 + THREE.MathUtils.degToRad(s.angle);
     g.rotation.z = damp(g.rotation.z, target, 8, dt);
     g.position.y = damp(g.position.y, s.bob, 8, dt);
@@ -274,8 +252,6 @@ export function SteadyPhone({ state }: { state: React.RefObject<SteadyState> }) 
   );
 }
 
-// ---------------- Design: en ince Ultra ----------------
-
 export type DesignState = { turn: number };
 
 function ProfilePhone({ url, heightMm, x, state }: { url: string; heightMm: number; x: number; state: React.RefObject<DesignState> }) {
@@ -288,7 +264,6 @@ function ProfilePhone({ url, heightMm, x, state }: { url: string; heightMm: numb
     const s = state.current;
     if (!g || !s) return;
     const dt = Math.min(rawDt, 0.1);
-    // Önden başlar, yan profile (90°) döner; yan yana yaklaşırlar, kalınlık farkı görünür
     const rotY = (Math.PI / 2) * s.turn + 0.12 * s.turn;
     const px = x * (1 - 0.72 * s.turn);
     g.rotation.y = damp(g.rotation.y, rotY, 7, dt);
@@ -316,10 +291,6 @@ export function DesignPhones({ state }: { state: React.RefObject<DesignState> })
   );
 }
 
-// ---------------- Build your Ultra: yapılandırıcı ----------------
-
-// colorId: seçili renk; spin: renk her değiştiğinde artar (telefon bir tur döner);
-// dragX/dragY: kullanıcının sürükleyerek verdiği dönüş (radyan)
 export type BuildState = { colorId: string; spin: number; dragX: number; dragY: number };
 
 export function BuildPhone({ state }: { state: React.RefObject<BuildState> }) {
@@ -334,12 +305,12 @@ export function BuildPhone({ state }: { state: React.RefObject<BuildState> }) {
     const dt = Math.min(rawDt, 0.1);
 
     if (painted.current !== s.colorId) {
-      // İlk boyamada renk parçalarının materyalleri bu kopyaya özel kopyalanır (ana sahnedeki telefon etkilenmez)
       if (painted.current === null) {
         g.traverse((o) => {
           const m = o as THREE.Mesh;
           if (!m.isMesh) return;
-          const own = (mat: THREE.Material) => (PART_BY_MATERIAL[mat.name] ? mat.clone() : mat);
+          const own = (mat: THREE.Material) =>
+            PART_BY_MATERIAL[mat.name] || mat.name === WALL_MATERIAL ? mat.clone() : mat;
           m.material = Array.isArray(m.material) ? m.material.map(own) : own(m.material);
         });
       }
@@ -348,7 +319,6 @@ export function BuildPhone({ state }: { state: React.RefObject<BuildState> }) {
       painted.current = s.colorId;
     }
 
-    // Arkası 3/4 açıyla gösterilir (renk en iyi orada görünür); renk değişince bir tur döner, sürüklenince takip eder
     const rotY = Math.PI + 0.45 + s.spin * Math.PI * 2 + s.dragY;
     const rotX = 0.08 + s.dragX;
     g.rotation.y = damp(g.rotation.y, rotY, 6, dt);
@@ -369,12 +339,8 @@ export function BuildPhone({ state }: { state: React.RefObject<BuildState> }) {
   );
 }
 
-// ---------------- Inside: patlamış görünüm ----------------
-
-// turn: telefonun yandan bakışa dönmesi (0-1); explode: katmanların ayrılması (0-1)
 export type InsideState = { turn: number; explode: number };
 
-// Katmanlar önden arkaya: (Z konumu, ayrıldığındaki uzaklık). Telefon yüksekliği 1 birim.
 export const INSIDE_LAYERS = [
   { key: 'display', z: 0.32 },
   { key: 'vapor', z: 0.21 },
@@ -403,7 +369,7 @@ export function InsidePhone({ state }: { state: React.RefObject<InsideState> }) 
   const phone = useNormalizedPhone(S26_URL);
   const size = phone.userData.size as THREE.Vector3;
   const parts = useMemo(() => splitPhoneLayers(phone), [phone]);
-  const partsRef = useRef<ReturnType<typeof splitPhoneLayers> | null>(null); // her karede kaydırılır (ref üzerinden)
+  const partsRef = useRef<ReturnType<typeof splitPhoneLayers> | null>(null);
   useEffect(() => {
     partsRef.current = parts;
   }, [parts]);
@@ -411,7 +377,6 @@ export function InsidePhone({ state }: { state: React.RefObject<InsideState> }) 
   const extra = useRef<Record<string, THREE.Object3D | null>>({});
   const pen = useRef<THREE.Group>(null);
 
-  // İç parçalar (modelde iç donanım yok; basit, ucuz geometrilerle temsil edilir)
   const mats = useMemo(
     () => ({
       vapor: new THREE.MeshStandardMaterial({ color: '#c8834f', metalness: 0.8, roughness: 0.35 }),
@@ -443,10 +408,8 @@ export function InsidePhone({ state }: { state: React.RefObject<InsideState> }) 
     const dt = Math.min(rawDt, 0.1);
     const e = s.explode;
 
-    // Yan-önden bakış: katmanlar arasındaki boşluk görünsün
     const rotY = -1.0 * s.turn;
     const rotX = 0.28 * s.turn;
-    // Dar alanda (mobil) küçülür; açıldıkça biraz daha küçülür ki ayrılan katmanlar kadraja sığsın
     const aspect = (camera as THREE.PerspectiveCamera).aspect || 1;
     const sc = Math.min(1.3, 0.55 + aspect * 0.75) * (1 - 0.18 * e);
     g.rotation.y = damp(g.rotation.y, rotY, 7, dt);
@@ -464,10 +427,9 @@ export function InsidePhone({ state }: { state: React.RefObject<InsideState> }) 
     move(parts.back, LAYER_Z.back * e);
     ['vapor', 'board', 'battery'].forEach((k) => {
       const o = extra.current[k];
-      if (o) o.visible = e > 0.02; // kapalıyken gövdenin içinde, gizli
+      if (o) o.visible = e > 0.02;
       move(o, LAYER_Z[k] * e);
     });
-    // S Pen alttan dışarı kayar
     if (pen.current) {
       const py = -0.22 - 0.5 * e;
       pen.current.position.y = damp(pen.current.position.y, py, 7, dt);
@@ -484,7 +446,6 @@ export function InsidePhone({ state }: { state: React.RefObject<InsideState> }) 
       <group ref={group} scale={1.2}>
         <primitive object={phone} />
 
-        {/* Buhar odası (soğutma) */}
         <mesh
           ref={(o) => {
             extra.current.vapor = o;
@@ -495,7 +456,6 @@ export function InsidePhone({ state }: { state: React.RefObject<InsideState> }) 
           <boxGeometry args={[w * 0.72, 0.34, 0.004]} />
         </mesh>
 
-        {/* Ana kart + işlemci */}
         <group
           ref={(o) => {
             extra.current.board = o;
@@ -510,7 +470,6 @@ export function InsidePhone({ state }: { state: React.RefObject<InsideState> }) 
           </mesh>
         </group>
 
-        {/* Pil */}
         <group
           ref={(o) => {
             extra.current.battery = o;
@@ -525,7 +484,6 @@ export function InsidePhone({ state }: { state: React.RefObject<InsideState> }) 
           </mesh>
         </group>
 
-        {/* S Pen (yuvasından alttan çıkar) */}
         <group ref={pen} position={[-w * 0.3, -0.22, -0.01]}>
           <mesh material={mats.pen}>
             <cylinderGeometry args={[0.0085, 0.0085, 0.42, 16]} />

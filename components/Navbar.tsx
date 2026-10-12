@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { scrollToId } from '@/lib/lenis';
 import { GROUPS, sectionById, useActiveSection } from '@/lib/sections';
+import { isSoundOn, isSoundOnServer, playSound, setSoundOn, subscribeSound } from '@/lib/sound';
 
-// Üst menü: bölümler gruplanır (Camera, Features açılır menü). Bölüm listesi lib/sections.ts'te.
 export default function Navbar() {
+  const soundOn = useSyncExternalStore(subscribeSound, isSoundOn, isSoundOnServer);
   const [open, setOpen] = useState(false);
   const activeId = useActiveSection();
   const activeGroup = sectionById(activeId)?.group;
@@ -53,7 +54,6 @@ export default function Navbar() {
                 />
               </a>
 
-              {/* Açılır menü (üstüne gelince) */}
               {multi && (
                 <div className="absolute top-full left-1/2 -translate-x-1/2 pt-1 opacity-0 invisible translate-y-1 group-hover/nav:opacity-100 group-hover/nav:visible group-hover/nav:translate-y-0 transition-all duration-200">
                   <div className="min-w-48 rounded-2xl border border-white/10 bg-[#0b0b0d] p-2 shadow-2xl">
@@ -93,7 +93,6 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* Mobil menü: gruplar başlık, alt bölümler girintili */}
       {open && (
         <nav className="lg:hidden absolute top-16 inset-x-0 max-h-[calc(100svh-4rem)] overflow-y-auto bg-black/95 border-b border-white/10 flex flex-col px-5 py-2">
           {GROUPS.map((g) => (
@@ -123,6 +122,19 @@ export default function Navbar() {
               )}
             </div>
           ))}
+          <button
+            onClick={() => {
+              setSoundOn(!soundOn);
+              if (!soundOn) playSound('tick');
+            }}
+            aria-pressed={soundOn}
+            className="flex items-center justify-between py-4 text-base font-light text-white/70"
+          >
+            <span>Sound</span>
+            <span className={`rounded-full px-3 py-1 text-xs ${soundOn ? 'bg-cyan-300 text-black' : 'bg-white/10'}`}>
+              {soundOn ? 'On' : 'Off'}
+            </span>
+          </button>
         </nav>
       )}
     </header>

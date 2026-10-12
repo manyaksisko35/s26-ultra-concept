@@ -1,12 +1,15 @@
 'use client';
 
 import Scene from '@/components/Scene';
+import HeroGlow from '@/components/HeroGlow';
 import Loader from '@/components/Loader';
 import Navbar from '@/components/Navbar';
 import ScrollProgress from '@/components/ScrollProgress';
 import SectionDots from '@/components/SectionDots';
 import SoundToggle from '@/components/SoundToggle';
 import HeadlineReveal from '@/components/HeadlineReveal';
+import AmbientPause from '@/components/AmbientPause';
+import FilmTour from '@/components/FilmTour';
 import Hero from '@/components/Hero';
 import Teardown from '@/components/Teardown';
 import Features from '@/components/Features';
@@ -30,21 +33,27 @@ import Specs from '@/components/Specs';
 export default function Home() {
   return (
     <>
+      <a
+        href="#overview"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[200] focus:rounded-full focus:bg-white focus:px-5 focus:py-2.5 focus:text-black focus:font-semibold"
+      >
+        Skip to content
+      </a>
       <Loader />
       <Navbar />
       <ScrollProgress />
       <SectionDots />
       <SoundToggle />
       <HeadlineReveal />
+      <AmbientPause />
+      <FilmTour />
 
-      {/* Animasyon konteyneri: sadece 6 bölüm (Hero, Teardown, Features, Camera, S Pen, Colors), başka hiçbir şey eklenmemeli */}
       <main id="main-scroll-container" className="relative w-full h-auto bg-[#030303]">
-        {/* 3D Canvas Sabit Katman */}
         <div className="fixed top-0 left-0 w-full h-full z-0 pointer-events-none">
+          <HeroGlow />
           <Scene />
         </div>
 
-        {/* 6 Aşamalı HTML Scroll Bölümleri */}
         <div className="relative z-10 w-full flex flex-col pointer-events-auto">
           <Hero />
           <Teardown />
@@ -55,7 +64,6 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Animasyon bittikten sonra gelen bölümler (opak zeminle canvas'ı örter) */}
       <GalaxyAI />
       <ZoomSection />
       <NightographySection />
@@ -69,7 +77,6 @@ export default function Home() {
       <BuildSection />
       <Specs />
 
-      {/* Steady, Privacy ve Design bölümlerinin 3D telefonları için tek ortak tuval */}
       <SectionCanvas />
     </>
   );

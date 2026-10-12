@@ -1,7 +1,3 @@
-// Galaxy S26 Ultra ve Galaxy S25 Ultra karşılaştırması.
-// Kaynak: Samsung'un resmi sayfaları (samsung.com/us/smartphones/galaxy-s26-ultra/compare/,
-// samsung.com/us/smartphones/galaxy-s25-ultra/compare/, samsung.com/nz/smartphones/galaxy-s25-ultra/specs/)
-// highlight: S26 Ultra'nın öne çıktığı satırlar (vurgulu gösterilir)
 export type CompareRow = { label: string; s26: string; s25: string; highlight?: boolean };
 
 export const COMPARE_ROWS: CompareRow[] = [
@@ -19,7 +15,6 @@ export const COMPARE_ROWS: CompareRow[] = [
   { label: 'Weight', s26: '214g', s25: '218g', highlight: true },
 ];
 
-// S26 Ultra'nın S25 Ultra'ya göre performans kazanımları (Samsung'un karşılaştırma sayfasından)
 export const COMPARE_GAINS = [
   { value: '39%', label: 'faster AI (NPU)' },
   { value: '24%', label: 'better graphics (GPU)' },

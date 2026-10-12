@@ -14,7 +14,7 @@ export default function Specs() {
   return (
     <section id="specs" className="relative z-10 bg-[#030303] px-6 md:px-[12%] pt-24 md:pt-32 pb-12">
       <p className="sg-eyebrow mb-5">Specifications</p>
-      <h2 className="sg-title text-5xl md:text-7xl mb-10 md:mb-16">
+      <h2 className="sg-title mb-10 md:mb-16">
         Tech <strong>specs</strong>
       </h2>
 
@@ -32,7 +32,7 @@ export default function Specs() {
         <a href="#compare" className="sg-btn sg-btn--ghost">Compare models</a>
       </div>
 
-      <footer className="mt-20 md:mt-32 pt-8 border-t border-white/10 flex flex-col gap-2 md:flex-row md:justify-between text-xs text-white/40">
+      <footer className="mt-20 md:mt-32 pt-8 border-t border-white/10 flex flex-col gap-2 md:flex-row md:justify-between text-xs text-white/60">
         <span className="tracking-[0.3em]">SAMSUNG</span>
         <span className="md:text-right">
           Fan-made concept. Not affiliated with Samsung. Designed and Coded by Hasan Alp Güngör.

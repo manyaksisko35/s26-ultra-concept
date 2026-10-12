@@ -6,8 +6,6 @@ export const smooth = (v: number) => {
   return t * t * (3 - 2 * t);
 };
 
-// Sabitlenen (sticky) bir bölümün scroll ilerlemesini (0-1) verir: 0 = bölüm ekranı doldurdu, 1 = sabit kısım bitti.
-// onProgress karede en fazla bir kez, sadece değer değişince çağrılır; DOM'a doğrudan yazmak içindir (state yok).
 export function useSectionProgress(ref: RefObject<HTMLElement | null>, onProgress: (p: number) => void) {
   const cb = useRef(onProgress);
   useEffect(() => {

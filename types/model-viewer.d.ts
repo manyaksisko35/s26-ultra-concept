@@ -1,5 +1,3 @@
-// <model-viewer> (Google) özel HTML etiketi için JSX tanımı. Kütüphane public/vendor/model-viewer.min.js'ten,
-// AR penceresi açılınca yüklenir (npm'e eklenmedi: projedeki three sürümüyle peer bağımlılık çakışması var).
 import type React from 'react';
 
 declare module 'react' {

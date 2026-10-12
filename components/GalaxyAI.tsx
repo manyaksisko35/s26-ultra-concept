@@ -17,15 +17,14 @@ export default function GalaxyAI() {
       <div className="absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-violet-500/10 to-transparent pointer-events-none" />
 
       <p className="sg-eyebrow mb-5 relative">Galaxy AI</p>
-      <h2 className="sg-title text-5xl md:text-8xl mb-6 relative">
+      <h2 className="sg-title sg-title-xl mb-6 relative">
         <span className="sg-ai font-semibold">Intelligence</span>
         <br />that gets you.
       </h2>
-      <p className="text-white/55 text-lg md:text-xl font-light max-w-xl mb-10 md:mb-14 relative">
+      <p className="sg-lead max-w-xl mb-10 md:mb-14 relative">
         AI that works quietly in the background and shows up exactly when you need it.
       </p>
 
-      {/* Canlı demolar */}
       <AIDemos />
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 max-w-6xl relative">

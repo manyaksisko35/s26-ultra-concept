@@ -2,9 +2,6 @@
 
 import { useEffect, useState } from 'react';
 
-// Sayfadaki tüm bölümler (yukarıdan aşağıya). Menü (Navbar) ve bölüm noktaları (SectionDots) buradan beslenir.
-// group: menüde hangi başlığın altında durduğu. offset: tıklanınca bölümün başından kaç ekran içeri kayılacağı
-// (S Pen çıkmış, yelpaze açılmış, karşılaştırma dolmuş görünsün diye).
 export type Section = { id: string; label: string; group: string; offset?: number; inMenu?: boolean };
 
 export const SECTIONS: Section[] = [
@@ -28,12 +25,10 @@ export const SECTIONS: Section[] = [
   { id: 'specs', label: 'Specs', group: 'Specs' },
 ];
 
-// Menü grupları (masaüstünde soldan sağa sıra). Birden çok bölümü olan grup açılır menü olur.
 export const GROUPS = ['Overview', 'Performance', 'Camera', 'S Pen', 'Colors', 'Features', 'Compare', 'Specs'].map(
   (name) => ({ name, items: SECTIONS.filter((s) => s.group === name && s.inMenu !== false) })
 );
 
-// Ekranın ortasını geçen son bölüm (scroll'a göre, karede en fazla bir kez hesaplanır)
 export function useActiveSection() {
   const [active, setActive] = useState<string>(SECTIONS[0].id);
   useEffect(() => {

@@ -6,11 +6,7 @@ import { PrivacyPhone, type PrivacyState } from '@/components/SectionPhones';
 import { requestFrame } from '@/lib/sectionCanvas';
 import { playSound } from '@/lib/sound';
 
-// Privacy Display demosu: scroll ile 3D telefon yana döner (bakış açısı artar); Privacy Display açıkken
-// ekran yandan bakınca kararır, kapalıyken görünür kalır. 3D telefon ortak tuvalde (SectionCanvas) çizilir.
-// Bilgi: Samsung'un ürün sayfası ve destek sayfası (samsung.com/uk/support/... how-to-use-privacy-display...)
-
-const MAX_ANGLE = 55; // derece
+const MAX_ANGLE = 55;
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const smooth = (v: number) => {
@@ -18,7 +14,6 @@ const smooth = (v: number) => {
   return t * t * (3 - 2 * t);
 };
 
-// Scroll ilerlemesi -> bakış açısı: düz bak, yana dön, bekle, geri dön
 function angleAt(p: number) {
   if (p < 0.12) return 0;
   if (p < 0.45) return MAX_ANGLE * smooth((p - 0.12) / 0.33);
@@ -65,16 +60,15 @@ export default function PrivacySection() {
   }, [on]);
 
   return (
-    // 300svh: telefon yana döner, bir süre bekler, geri döner
     <section ref={sectionRef} id="privacy" className="relative z-10 w-full h-[300svh] bg-[#030303]">
       <div className="sg-ambient amb-cyan sticky top-0 h-svh w-full flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-20 px-6 lg:px-[12%] pt-20 pb-6">
         <div className="max-w-md text-center lg:text-left">
           <p className="sg-eyebrow mb-2 lg:mb-5">Privacy Display</p>
-          <h2 className="sg-title text-3xl lg:text-6xl mb-3 lg:mb-6">
+          <h2 className="sg-title mb-3 lg:mb-6">
             Clear for you. <br />
             <strong className="sg-ai">Dark for everyone else.</strong>
           </h2>
-          <p className="text-white/55 text-sm lg:text-lg font-light mb-4 lg:mb-8">
+          <p className="sg-lead mb-4 lg:mb-8">
             A first on Galaxy: the display itself limits how light spreads to the sides. Look straight on and
             everything is crisp; from beside you, the screen goes dark. Use it for the whole screen, chosen apps,
             notifications or PIN entry.
@@ -100,7 +94,6 @@ export default function PrivacySection() {
         </div>
 
         <div className="flex flex-col items-center gap-3 lg:gap-5">
-          {/* 3D telefon (ortak tuvalde çizilir; bu kutu sadece yerini belirler) */}
           <View className="w-[min(80vw,420px)] lg:w-[min(36vw,520px)] h-[44svh] lg:h-[66svh]">
             <Suspense fallback={null}>
               <PrivacyPhone state={phoneState} />
