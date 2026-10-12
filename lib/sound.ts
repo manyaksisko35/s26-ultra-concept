@@ -1,6 +1,6 @@
 export type SoundName = 'tick' | 'shutter' | 'pen' | 'chime';
 
-const KEY = 's27-sound';
+const KEY = 's26-sound';
 let ctx: AudioContext | null = null;
 let enabled = false;
 const listeners = new Set<() => void>();
