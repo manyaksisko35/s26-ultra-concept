@@ -4,7 +4,6 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { PHONE_COLORS, getColorId, getServerColorId, setColorId, subscribeColor } from '@/lib/phoneColor';
 
 type Props = {
-  // inline: Hero içinde, floating: sayfa boyunca altta yüzen küçük çubuk (sadece masaüstü)
   variant?: 'inline' | 'floating';
 };
 
@@ -12,7 +11,6 @@ export default function ColorPicker({ variant = 'inline' }: Props) {
   const activeId = useSyncExternalStore(subscribeColor, getColorId, getServerColorId);
   const active = PHONE_COLORS.find((c) => c.id === activeId) ?? PHONE_COLORS[0];
 
-  // Yüzen çubuk: hero'dan çıkınca görünür, animasyonlu bölümler bitince kaybolur
   const [visible, setVisible] = useState(variant === 'inline');
   useEffect(() => {
     if (variant !== 'floating') return;
@@ -42,7 +40,7 @@ export default function ColorPicker({ variant = 'inline' }: Props) {
     <div
       role="radiogroup"
       aria-label="Phone color"
-      className={`${wrapper} items-center gap-4 rounded-full border border-white/10 bg-black/45 backdrop-blur-xl px-4 py-2.5`}
+      className={`${wrapper} items-center gap-4 rounded-full border border-white/10 bg-black/75 px-4 py-2.5`}
     >
       <div className="flex items-center gap-2.5">
         {PHONE_COLORS.map((c) => {

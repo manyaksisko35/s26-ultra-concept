@@ -1,5 +1,8 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import { Outfit } from 'next/font/google';
+
+const outfit = Outfit({ subsets: ['latin', 'latin-ext'], variable: '--font-outfit', display: 'swap' });
 
 export const metadata: Metadata = {
   title: 'Samsung Galaxy S26 Ultra | Galaxy AI',
@@ -12,7 +15,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="antialiased selection:bg-cyan-500/30" suppressHydrationWarning>
+    <html lang="en" className={`${outfit.variable} antialiased selection:bg-cyan-500/30`} suppressHydrationWarning>
       <body className="bg-[#030303] text-white" suppressHydrationWarning>
         {children}
       </body>

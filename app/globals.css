@@ -1,21 +1,15 @@
-/* 1. Önce dışarıdan gelen her şey (Fontlar ve Tailwind) en tepeye eklenir */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;600;700&display=swap');
 @import "tailwindcss";
 
-/* 2. Varsa senin indirdiğin yerel font (Samsung Sharp Sans) tanıtılır */
-@font-face {
-  font-family: 'Samsung Sharp Sans';
-  src: url('/Samsung-Sharp-Sans-Bold.ttf') format('truetype');
-  font-weight: bold;
-}
-
-/* 3. Global CSS kuralları ve element ayarları en son yazılır */
 @layer base {
+  html,
+  body {
+    overflow-x: clip;
+  }
+
   body {
     background-color: #030303;
     color: #ffffff;
-    font-family: 'Samsung Sharp Sans', 'Outfit', sans-serif;
-    overflow-x: hidden;
+    font-family: var(--font-outfit), system-ui, sans-serif;
   }
   
   h1, h2, h3 {
@@ -23,7 +17,6 @@
   }
 }
 
-/* Scrollbar ayarları */
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -38,7 +31,6 @@
   background: #3f3f46;
 }
 
-/* ---- Samsung tarzı yardımcı sınıflar ---- */
 .sg-eyebrow {
   font-size: 0.75rem;
   letter-spacing: 0.32em;
@@ -47,13 +39,23 @@
 }
 
 .sg-title {
-  font-weight: 200;
-  letter-spacing: -0.045em;
-  line-height: 0.95;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 0.98;
+  text-wrap: balance;
 }
-.sg-title strong { font-weight: 600; }
+.sg-title strong { font-weight: 700; }
+h2.sg-title { font-size: clamp(2rem, 1.15rem + 3.7vw, 4.5rem); }
+h2.sg-title-xl { font-size: clamp(2.6rem, 1.3rem + 5.6vw, 6.5rem); }
 
-/* Galaxy AI gradient yazı */
+.sg-lead {
+  font-size: clamp(0.95rem, 0.86rem + 0.42vw, 1.2rem);
+  line-height: 1.6;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.62);
+  text-wrap: pretty;
+}
+
 .sg-ai {
   background: linear-gradient(90deg, #7dd3fc 0%, #a78bfa 55%, #f0abfc 100%);
   -webkit-background-clip: text;
@@ -62,38 +64,167 @@
 }
 
 .sg-card {
-  background: linear-gradient(145deg, rgba(255,255,255,0.07), rgba(255,255,255,0.015));
+  background: linear-gradient(145deg, rgba(28,28,32,0.82), rgba(10,10,12,0.72));
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 28px;
-  backdrop-filter: blur(18px);
-  transition: border-color 0.4s ease, transform 0.4s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: border-color 0.4s ease, transform 0.4s ease, box-shadow 0.4s ease;
 }
 .sg-card:hover {
-  border-color: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.26);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 18px 40px -20px rgba(103, 232, 249, 0.25);
   transform: translateY(-4px);
 }
 
 .sg-btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   padding: 0.85rem 2rem;
   border-radius: 999px;
   background: #fff;
   color: #000;
   font-weight: 600;
   font-size: 0.95rem;
-  transition: transform 0.3s ease, background 0.3s ease;
+  line-height: 1.2;
+  transition: transform 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
 }
-.sg-btn:hover { transform: scale(1.05); background: #e5e5e5; }
+.sg-btn:hover { transform: translateY(-1px) scale(1.03); background: #eef2f6; box-shadow: 0 10px 30px -12px rgba(255, 255, 255, 0.45); }
+.sg-btn:active { transform: scale(0.97); }
 .sg-btn--ghost {
   background: transparent;
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.4);
 }
-.sg-btn--ghost:hover { background: rgba(255, 255, 255, 0.1); }
+.sg-btn--ghost:hover { background: rgba(255, 255, 255, 0.1); box-shadow: none; }
+
+:focus-visible {
+  outline: 2px solid #67e8f9;
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+.sg-btn:focus-visible,
+button.rounded-full:focus-visible,
+a.rounded-full:focus-visible { border-radius: 999px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sg-card,
+  .sg-btn { transition: none; }
+  .sg-card:hover,
+  .sg-btn:hover,
+  .sg-btn:active { transform: none; }
+}
 
 @media (max-width: 767px) {
   .sg-card {
-    backdrop-filter: blur(6px);
-    background: rgba(12, 12, 14, 0.7);
+    background: rgba(12, 12, 14, 0.8);
   }
+}
+@media (prefers-reduced-motion: no-preference) {
+  html.reveal-ready h2.sg-title {
+    -webkit-mask-image: linear-gradient(90deg, #000 45%, transparent 55%);
+    mask-image: linear-gradient(90deg, #000 45%, transparent 55%);
+    -webkit-mask-size: 260% 100%;
+    mask-size: 260% 100%;
+    -webkit-mask-position: 100% 0;
+    mask-position: 100% 0;
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(18px);
+    transition:
+      opacity 0.8s ease,
+      filter 0.9s ease,
+      transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1),
+      -webkit-mask-position 1.1s cubic-bezier(0.3, 0.6, 0.2, 1),
+      mask-position 1.1s cubic-bezier(0.3, 0.6, 0.2, 1);
+  }
+  html.reveal-ready h2.sg-title[data-in] {
+    -webkit-mask-position: 0 0;
+    mask-position: 0 0;
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+
+.sg-ambient {
+  isolation: isolate;
+  overflow: clip;
+}
+.sg-ambient::before {
+  content: '';
+  position: absolute;
+  inset: -15%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(38% 34% at 22% 30%, var(--amb-a), transparent 70%),
+    radial-gradient(34% 30% at 78% 70%, var(--amb-b), transparent 70%);
+  animation: sg-drift 22s ease-in-out infinite alternate;
+  will-change: transform;
+}
+.sg-ambient::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+@keyframes sg-drift {
+  from { transform: translate3d(-4%, -3%, 0) scale(1); }
+  to { transform: translate3d(4%, 3%, 0) scale(1.08); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sg-ambient::before { animation: none; }
+}
+.amb-cyan   { --amb-a: rgba(34, 211, 238, 0.16); --amb-b: rgba(59, 130, 246, 0.12); }
+.amb-violet { --amb-a: rgba(167, 139, 250, 0.18); --amb-b: rgba(236, 72, 153, 0.10); }
+.amb-night  { --amb-a: rgba(37, 99, 235, 0.18);  --amb-b: rgba(99, 102, 241, 0.12); }
+.amb-sunset { --amb-a: rgba(251, 146, 60, 0.14); --amb-b: rgba(168, 85, 247, 0.12); }
+.amb-silver { --amb-a: rgba(186, 230, 253, 0.12); --amb-b: rgba(148, 163, 184, 0.12); }
+.amb-teal   { --amb-a: rgba(45, 212, 191, 0.14); --amb-b: rgba(234, 179, 8, 0.08); }
+.amb-indigo { --amb-a: rgba(79, 70, 229, 0.16);  --amb-b: rgba(14, 165, 233, 0.10); }
+
+.hero-glow__ring {
+  background: conic-gradient(from 0deg, transparent 0deg, rgba(103, 232, 249, 0.55) 60deg, transparent 120deg,
+      rgba(167, 139, 250, 0.5) 200deg, transparent 260deg, rgba(244, 114, 182, 0.35) 320deg, transparent 360deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 92%, #000 93%, #000 96%, transparent 97%);
+  mask: radial-gradient(closest-side, transparent 92%, #000 93%, #000 96%, transparent 97%);
+  filter: blur(2px);
+  animation: hero-spin 18s linear infinite;
+  will-change: transform;
+}
+.hero-glow__halo {
+  background: radial-gradient(closest-side, rgba(103, 232, 249, 0.14), rgba(167, 139, 250, 0.08) 55%, transparent 75%);
+}
+@keyframes hero-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-loaded]) .hero-in { opacity: 0; animation: hero-fallback 0.6s 6s forwards; }
+  html[data-loaded] .hero-in {
+    animation: hero-in 1s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  }
+  html[data-loaded] .hero-in--2 { animation-delay: 0.15s; }
+  html[data-loaded] .hero-in--3 { animation-delay: 0.4s; }
+  html[data-loaded] .hero-in--4 { animation-delay: 0.8s; }
+}
+@keyframes hero-fallback {
+  to { opacity: 1; }
+}
+@keyframes hero-in {
+  from { opacity: 0; transform: translateY(24px); filter: blur(12px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-glow__ring { animation: none; }
+}
+
+.sg-ambient:not([data-live])::before,
+.hero-glow:not([data-live]) .hero-glow__ring {
+  animation-play-state: paused;
 }

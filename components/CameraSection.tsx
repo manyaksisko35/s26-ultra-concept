@@ -3,11 +3,11 @@ export default function CameraSection() {
     <section id="camera" className="h-svh w-full flex items-end md:items-center justify-start px-6 md:px-[12%] pb-14 md:pb-0 relative">
       <div className="max-w-xl">
         <p className="sg-eyebrow mb-3 md:mb-5">Camera</p>
-        <h2 className="sg-title text-4xl md:text-7xl mb-4 md:mb-6 drop-shadow-xl">
+        <h2 className="sg-title mb-4 md:mb-6 drop-shadow-xl">
           Pro-Grade <br />
           <strong className="sg-ai">Optical Power.</strong>
         </h2>
-        <p className="text-white/55 text-base md:text-xl font-light leading-relaxed mb-6 md:mb-10">
+        <p className="sg-lead mb-6 md:mb-10">
           A 200MP main sensor, a 50MP ultra-wide and two telephoto lenses (3x and 5x)
           capture stunning detail, even in low light with Nightography.
         </p>
