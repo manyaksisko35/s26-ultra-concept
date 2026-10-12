@@ -10,14 +10,13 @@ export default function ColorSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
 
-  // Renk seçici yelpaze açılırken yavaşça görünür (scroll'a bağlı, state tutmadan)
   useEffect(() => {
     const update = () => {
       const sec = sectionRef.current;
       const picker = pickerRef.current;
       if (!sec || !picker) return;
       const vh = window.innerHeight;
-      const t = (window.scrollY - sec.offsetTop) / vh; // 0 = bölüm başı, 1 = yelpaze açılmış
+      const t = (window.scrollY - sec.offsetTop) / vh;
       const v = Math.min(1, Math.max(0, (t - 0.45) / 0.45));
       picker.style.opacity = String(v);
       picker.style.pointerEvents = v > 0.6 ? 'auto' : 'none';
@@ -32,13 +31,11 @@ export default function ColorSection() {
   }, []);
 
   return (
-    // 300svh: ilk 100svh'de bölüm girer ve telefon geçişi biter, sonraki 200svh'de içerik sabit kalır:
-    // yelpaze açılır, ardından renk seçimi için bir ekran daha beklenir
     <section ref={sectionRef} id="colors" className="relative w-full h-[300svh] pointer-events-none">
       <div className="sticky top-0 h-svh w-full flex flex-col justify-between items-center px-6 md:px-[12%] pt-24 md:pt-28 pb-8 md:pb-10 text-center">
         <div>
           <p className="sg-eyebrow mb-3 md:mb-5">Colors</p>
-          <h2 className="sg-title text-4xl md:text-6xl drop-shadow-xl">
+          <h2 className="sg-title drop-shadow-xl">
             Pick your <strong className="sg-ai">style.</strong>
           </h2>
         </div>
@@ -48,7 +45,7 @@ export default function ColorSection() {
           <div
             role="radiogroup"
             aria-label="Phone color"
-            className="flex items-center gap-3 md:gap-4 rounded-full border border-white/10 bg-black/45 backdrop-blur-xl px-5 py-3"
+            className="flex items-center gap-3 md:gap-4 rounded-full border border-white/10 bg-black/75 px-5 py-3"
           >
             {FAN_COLORS.map((c) => {
               const selected = c.id === activeId;
