@@ -241,7 +241,7 @@ function RealPhoneModel() {
           s5: fit(0.27, 0.235, 0, [0.05, TAU + 0.25, 0], 0),
           s6: fit(0.26, 0.5, 0, [0, TAU + Math.PI, 0], 0),
         },
-        0.2
+        0.15
       );
     });
 
