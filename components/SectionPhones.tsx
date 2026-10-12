@@ -14,7 +14,7 @@ import {
   splitPhoneLayers,
   useNormalizedPhone,
 } from '@/lib/phoneModel';
-import { PART_BY_MATERIAL, PHONE_COLORS, applyPreset } from '@/lib/phoneColor';
+import { PART_BY_MATERIAL, PHONE_COLORS, WALL_MATERIAL, applyPreset } from '@/lib/phoneColor';
 import { requestFrame } from '@/lib/sectionCanvas';
 import { RimLight, SoftShadow, StudioEnv } from '@/components/StudioEnv';
 
@@ -309,7 +309,8 @@ export function BuildPhone({ state }: { state: React.RefObject<BuildState> }) {
         g.traverse((o) => {
           const m = o as THREE.Mesh;
           if (!m.isMesh) return;
-          const own = (mat: THREE.Material) => (PART_BY_MATERIAL[mat.name] ? mat.clone() : mat);
+          const own = (mat: THREE.Material) =>
+            PART_BY_MATERIAL[mat.name] || mat.name === WALL_MATERIAL ? mat.clone() : mat;
           m.material = Array.isArray(m.material) ? m.material.map(own) : own(m.material);
         });
       }

@@ -1,4 +1,5 @@
-import type * as THREE from 'three';
+import * as THREE from 'three';
+import { requestFrame } from '@/lib/sectionCanvas';
 
 export type PhoneColor = {
   id: string;
@@ -48,12 +49,57 @@ export const subscribeColor = (l: () => void) => {
   };
 };
 
+export const WALL_MATERIAL = 'Material_173';
+const DEFAULT_WALL = 'sky-blue';
+const walls = new Map<string, THREE.Texture | 'loading'>();
+const waiting = new Map<string, Set<THREE.MeshStandardMaterial>>();
+const wanted = new WeakMap<THREE.Material, string>();
+let baseWall: THREE.Texture | null = null;
+
+function setWallpaper(mat: THREE.MeshStandardMaterial, id: string) {
+  baseWall ??= mat.emissiveMap;
+  const base = baseWall;
+  wanted.set(mat, id);
+  if (!base) return;
+  if (id === DEFAULT_WALL) {
+    mat.emissiveMap = base;
+    return;
+  }
+  const cached = walls.get(id);
+  if (cached && cached !== 'loading') {
+    mat.emissiveMap = cached;
+    return;
+  }
+  if (!waiting.has(id)) waiting.set(id, new Set());
+  waiting.get(id)!.add(mat);
+  if (cached === 'loading') return;
+  walls.set(id, 'loading');
+  new THREE.TextureLoader().load(`/wallpapers/${id}.webp`, (tex) => {
+    tex.flipY = base.flipY;
+    tex.colorSpace = base.colorSpace;
+    tex.channel = base.channel;
+    tex.wrapS = base.wrapS;
+    tex.wrapT = base.wrapT;
+    tex.anisotropy = base.anisotropy;
+    walls.set(id, tex);
+    waiting.get(id)?.forEach((m) => {
+      if (wanted.get(m) === id) m.emissiveMap = tex;
+    });
+    waiting.delete(id);
+    requestFrame();
+  });
+}
+
 export function applyPreset(root: THREE.Object3D, preset: PhoneColor) {
   root.traverse((o) => {
     const m = o as THREE.Mesh;
     if (!m.isMesh) return;
     (Array.isArray(m.material) ? m.material : [m.material]).forEach((mat) => {
       const std = mat as THREE.MeshStandardMaterial;
+      if (std.name === WALL_MATERIAL) {
+        setWallpaper(std, preset.id);
+        return;
+      }
       const part = PART_BY_MATERIAL[std.name];
       if (!part) return;
       if (part === 'glass') {
