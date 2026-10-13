@@ -29,6 +29,7 @@ import ChargeSection from '@/components/ChargeSection';
 import CompareSection from '@/components/CompareSection';
 import SectionCanvas from '@/components/SectionCanvas';
 import Specs from '@/components/Specs';
+import BudsPromo from '@/components/BudsPromo';
 
 export default function Home() {
   return (
@@ -75,6 +76,7 @@ export default function Home() {
       <CompareSection />
       <SecuritySection />
       <BuildSection />
+      <BudsPromo />
       <Specs />
 
       <SectionCanvas />
