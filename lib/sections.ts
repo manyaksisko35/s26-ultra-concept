@@ -22,6 +22,7 @@ export const SECTIONS: Section[] = [
   { id: 'compare', label: 'Compare', group: 'Compare', offset: 2 },
   { id: 'security', label: 'Security', group: 'Features' },
   { id: 'build', label: 'Build your Ultra', group: 'Buy', inMenu: false },
+  { id: 'ecosystem', label: 'Galaxy ecosystem', group: 'Features' },
   { id: 'specs', label: 'Specs', group: 'Specs' },
 ];
 
