@@ -8,7 +8,7 @@ const SITES = [
     text: 'Open the case, hear the ANC and 360 Audio.',
   },
   {
-    href: 'https://watch-ultra-concept.vercel.app',
+    href: 'https://watch-ultra2-concept.vercel.app',
     img: '/ecosystem-watch-ultra2.webp',
     name: 'Galaxy Watch Ultra2',
     text: 'Thinner titanium, 5,000 nits and an 800 mAh battery.',
